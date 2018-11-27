@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>fish - the friendly interactive shell</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      code {
+        background: #e7e8e2;
+        border-radius: 5px;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+      .remark-code-line-highlighted     { background-color: #373832; }
+      img {
+        max-width: 100%;
+      }
+      blockquote {
+        background: #f9f9f9;
+        border-left: 10px solid #ccc;
+        margin: 1.5em 10px;
+        padding: 0.5em 10px;
+        quotes: "\201C""\201D""\2018""\2019";
+      }
+      blockquote:before {
+        color: #ccc;
+        content: open-quote;
+        font-size: 4em;
+        line-height: 0.1em;
+        margin-right: 0.25em;
+        vertical-align: -0.4em;
+      }
+      blockquote p {
+        display: inline;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle
+
+# fish shell
+
+&gt; Finally, a command line shell for the 90s
+
+f(riendly)i(interactive)sh(ell) is a modern alternative to bash or zsh.
+
+![logo](./assets/Terminal_Logo_CRT_Small.png "Logo")
+
+???
+
+homepage link - https://fishshell.com
+
+---
+
+# POSIX: not `POSIX` compliant
+
+> POSIX (Portable Operating System Interface) is a set of standard operating system interfaces based on the Unix operating system.
+
+`fish` is not a dropin replacement for `bash`. Some common features that you've grown use to in `bash` like `!!` or `&&` are not supported out of the box.
+
+```sh
+# bash
+cd /tmp/foo && ls -la
+# fish
+cd /tmp/foo; and ls -la
+```
+
+Additionally the syntax for setting variables, conditionals etc... may be different
+
+  ```sh
+  # bash
+  foo=bar
+  if ... fi
+  # fish
+  set foo bar
+  if ... end
+  ```
+
+???
+
+Let's get this out of the way right from the start...
+
+---
+
+# POSIX (not): examples
+
+There is not support for the `alias` keyword (not true). In fish we prefer function (lazy-loaded) or abbreviations (initialized once).
+
+```sh
+# bash
+alias gst="git status --short"
+
+# fish abbreviation
+abbr --add gst 'git status --short'
+
+# fish function
+function gst -d 'Shortcut for git status'
+  git status --short
+end
+```
+
+See the [tutorial](https://fishshell.com/docs/current/tutorial.html) for a more comprehensive list of differences.
+
+---
+
+# POSIX (not): hope?
+
+![hope](./assets/hope.jpg "HOPE!")
+
+There are some [simple workarounds](https://git.io/fpudH)
+
+AND!!! Support for `&&` and `!!` is coming in [v3.0](https://github.com/fish-shell/fish-shell/commit/014b91488db29480160284adfd1cddf286d2888a) or `brew install --HEAD fish`
+
+---
+
+# POSIX (not): still use bash!
+
+Though the interactive `fish` shell is not strictly `POSIX` compliant you still have `bash` available. Let's say you want to write a portable helper script to use on Linux servers as well as your local MacOS shell. Simply point your Shebang at `bash` (or similar) and hack away!
+
+```sh
+#! /usr/bin/env bash
+
+echo 'hello FISH!'
+```
+
+![happy-hacking](./assets/cat.gif "Happy hacking!")
+
+???
+
+All that being said, for portable scripts you should probably still use bash and likely won't have to worry about these differences on a day to day basis.
+
+---
+
+# Feture: Completion
+
+Sensible, fast, built-in completions (`Tab` and `Ctrl + f`).
+
+* Pressing tab will complete up to the uniquenes point
+
+    * eg. if `foo.txt` and `foo.md` then `f+tab` will complete to `foo`
+
+* Pressing `ctrl+f` will expand the entire suggestion
+
+    * eg. will expand to `foo.txt`
+
+* Completions use a combination of file paths and history
+
+![completion](./assets/completion.gif "Completion")
+
+???
+
+Live demo
+
+cd as
+jt incent
+cat in
+
+---
+
+# Feature: lazy-loaded function system
+
+> When fish encounters a command, it attempts to autoload a function for that command, by looking for a file with the name of that command in `$HOME/.config/fish/functions/*.fish`
+
+For example the first time you type `mkdir`, `fish` will search the `functions` directory for a file named `mkdir.fish`. If the file exists it will be sourced executed. All subsequent requests to `mkdir` will rely on this function.
+
+```sh
+function mkdir -d 'Create a directory and set CWD'
+  command mkdir $argv # <- not `$1`
+
+  if test $status = 0 # <- not `$?`
+    switch $argv[(count $argv)] # <- not `case`
+      case '-*'
+      case '*'
+        cd $argv[(count $argv)]
+        return
+    end
+  end
+end
+```
+
+(links) [source](http://fishshell.com/docs/current/tutorial.html#tut_autoload)
+
+---
+
+# Prompt: prompt as readable code(!!)
+
+Definining your command line prompt is as simple as implementing the `fish_prompt` function.
+
+```sh
+function fish_prompt --description 'Write out the prompt'
+  set -l last_status $status
+
+  set_color --bold blue
+  echo -n (dirs)
+  set_color normal
+
+  git_prompt # <- external function
+  echo
+
+  if not test $last_status -eq 0
+    set_color --bold red
+  else
+    set_color --bold green
+  end
+
+  echo -n '=> '
+  set_color normal
+end
+```
+
+???
+
+Anyone who has messed around with the syntax setting `PS1` to tweak your prompt in bash should appreciate this!
+
+---
+
+## Prompt: example
+
+The previous function produces a prompt that looks like this:
+
+![prompt](./assets/prompt.png "Prompt")
+
+???
+
+Notice the 2-line prompt, produced simply by issuing an echo
+
+---
+
+## Prompt: approximate bash equivalent
+
+Here's a the definition of a VERY similar prompt in `bash`!
+
+<image src='./assets/bash-prompt.png' alt="PS1" height="30%" />
+
+???
+
+Note that the `git` status stuff is mixed in here
+
+---
+
+## Prompt: right prompt? no problem!
+
+```sh
+function fish_right_prompt --description 'Command duration on right'
+  if test $cmd_duration && test $cmd_duration -gt 0
+    set secs (math "$cmd_duration / 1000")
+    echo $secs
+  end
+end
+```
+
+![right-prompt](./assets/right-prompt.png "Right Prompt")
+
+---
+
+# Feature: global changes - no need to reload shell/tab
+
+Functions and (some) variables exist on a "global scope". This means that you can have multiple tabs open, edit the definition of a function and immediatly reap the benefits from that shell session or other option sessions. No more closing and re-opening tabs after making a config change!
+
+## Live Demo
+
+```sh
+function hello
+  echo hello world
+end
+```
+
+???
+
+jt fish
+vi functions/hello.fish
+
+```sh
+  echo hello $argv
+```
+
+```sh
+  echo hello world
+```
+---
+
+# Other: frameworks/plugins (likely unnecessary)
+
+Like `bash` and `zsh` there are multiple frameworks (Fisherman, Oh My Fish!) and plugins for `fish` but the default is so good you probably don't need them (or their overhead).
+
+---
+
+# Resources: links
+
+Some helpful resources for further learning:
+
+* [fish shell](https://fishshell.com)
+* [tutorial](https://fishshell.com/docs/current/tutorial.html)
+* [fish shell cookbook](https://github.com/jorgebucaran/fish-shell-cookbook)
+* [fish wiki](https://github.com/gnab/remark/wiki)
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
