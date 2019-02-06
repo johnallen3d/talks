@@ -59,9 +59,19 @@ class: center, middle
 
 homepage link - https://www.docker.com
 
-```
-docker run --rm hello-world
-```
+[Docker Getting Started](https://docs.docker.com/get-started/)
+
+Loosely analogy would be a saved virtual machine: A package meant to issolate a running application/process
+* Docker is an open-source project based on Linux containers.
+* It uses Linux Kernel features like namespaces and control groups to create containers on top of an operating system.
+* Containers are far from new; Google has been using their own container technology for years.
+* Others Linux container technologies include Solaris Zones, BSD jails, and LXC, which have been around for many years.
+
+TKXS Use Cases
+
+* development - Docker for Mac
+* CI/CD with CircleCI/Codeship
+* production apps (on Heroku or ECS)
 
 ---
 
@@ -79,13 +89,12 @@ An image is an executable package that includes everything needed to run an appl
 
 ???
 
-[Docker Getting Started](https://docs.docker.com/get-started/)
+```
+docker run --rm hello-world
+```
 
-Loosely analogy would be a saved virtual machine: A package meant to issolate a running application/process
-* Docker is an open-source project based on Linux containers.
-* It uses Linux Kernel features like namespaces and control groups to create containers on top of an operating system.
-* Containers are far from new; Google has been using their own container technology for years.
-* Others Linux container technologies include Solaris Zones, BSD jails, and LXC, which have been around for many years.
+* image layers
+* registries
 
 ---
 
@@ -296,8 +305,17 @@ Start-Process powershell -verb runAs
 
 ---
 
+# Live Demo: build and run - compose
+
 ```sh
-docker run --rm -it microsoft/iis:nanoserver
+# build all of the services defined in the config
+docker-compose build
+```
+
+```sh
+# start up and link together all of the services
+docker-compose up
+```
 
 ???
 
