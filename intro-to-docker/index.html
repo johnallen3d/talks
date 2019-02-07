@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Docker and Docker for Windows</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      code {
+        background: #e7e8e2;
+        border-radius: 5px;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+      .remark-code-line-highlighted     { background-color: #373832; }
+      img {
+        max-width: 100%;
+      }
+      blockquote {
+        background: #f9f9f9;
+        border-left: 10px solid #ccc;
+        margin: 1.5em 10px;
+        padding: 0.5em 10px;
+        quotes: "\201C""\201D""\2018""\2019";
+      }
+      blockquote:before {
+        color: #ccc;
+        content: open-quote;
+        font-size: 4em;
+        line-height: 0.1em;
+        margin-right: 0.25em;
+        vertical-align: -0.4em;
+      }
+      blockquote p {
+        display: inline;
+      }
+      img[alt=container-visual] {
+        width: 500px;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle
+
+# Docker and Docker for Windows
+
+> Build, Ship, and Run Any App, Anywhere
+
+![logo](./assets/docker_logo.png "Logo")
+
+???
+
+homepage link - https://www.docker.com
+
+[Docker Getting Started](https://docs.docker.com/get-started/)
+
+Loosely analogy would be a saved virtual machine: A package meant to issolate a running application/process
+* Docker is an open-source project based on Linux containers.
+* It uses Linux Kernel features like namespaces and control groups to create containers on top of an operating system.
+* Containers are far from new; Google has been using their own container technology for years.
+* Others Linux container technologies include Solaris Zones, BSD jails, and LXC, which have been around for many years.
+
+TKXS Use Cases
+
+* development - Docker for Mac
+* CI/CD with CircleCI/Codeship
+* production apps (on Heroku or ECS)
+
+---
+
+# Terminology: image
+
+An image is an executable package that includes everything needed to run an application--the code, a runtime, libraries, environment variables, and configuration files.
+
+### Examples
+
+* [IIS](https://hub.docker.com/_/microsoft-windows-servercore-iis)
+* [NGINX](https://hub.docker.com/_/nginx)
+* [Ruby](https://hub.docker.com/_/ruby)
+* [Interlok](https://hub.docker.com/r/adaptris/interlok)
+* [Microsoft SQL Server](https://hub.docker.com/_/microsoft-mssql-server)
+
+???
+
+```
+docker run --rm hello-world
+```
+
+* image layers
+* registries
+
+---
+
+# Terminology: container
+
+A container is a runtime instance of an image--what the image becomes in memory when executed (that is, an image with state, or a user process).
+
+![container-visual](./assets/container_visual.png "Container Visual")
+
+???
+
+[A Beginner-Friendly Introduction to Containers, VMs and Docker](https://medium.freecodecamp.org/a-beginner-friendly-introduction-to-containers-vms-and-docker-79a9e3e119b)
+
+Loosely analogy would be the instance a virtual machine configured to run IIS:
+
+* Major difference is that containers share the kernel with their host and don't require a complete operating system
+
+---
+
+# Terminology: Dockerfile
+
+A `Dockerfile` is a set of instructions that can be used to construct an image.
+
+```Dockerfile
+# the image to use as a starting point
+FROM ruby:2.6-alpine
+
+# the context (location) for subsequent commands and the container
+WORKDIR /usr/src/app
+
+# add files from the working directory on the host to the "WORKDIR"
+COPY . .
+
+# an instruction to run when a container instance started
+CMD ["ruby", "-run", "-e", "httpd", "--", "-p", "5000", "."]
+```
+
+???
+
+* talk about layers and caching
+
+---
+
+# Live Demo: build and run
+
+Combine what we've learned so far to run a container
+
+```sh
+# build an image from the Dockerfile
+docker build -t ruby-example .
+```
+
+```sh
+# run an instance of the image which starts a container
+docker run --rm -p 5000:5000 ruby-example
+```
+
+```sh
+# hit the page in a browser
+open http://localhost:5000
+```
+
+???
+
+#### build params
+
+* `-t` provides a tag or name for the image that is being built
+* trailing dot is the path to the context for the build
+
+#### run params
+
+* `--rm` tells Docker to remove the image after it exists
+* `-p` map port `5000` on the host to port `5000` inside the container
+* final arg - name of the image to run. could be an id
+
+#### other
+
+* run `docker images`
+* run `docker ps`
+* changes are not reflected until rebuild/restart
+
+---
+
+# Tooling: Docker Compose
+
+A tool that can process a set of instructions (in YAML format) and execute a series of Docker API commands
+
+```yaml
+version: "2.3"
+
+services:
+  web:
+    build:
+      context: .
+    ports:
+      - '5000:5000'
+    volumes:
+      - .:/usr/src/app
+    links:
+      - db
+
+  db:
+    image: postgres:alpine
+    environment:
+      POSTGRES_USER: moby
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: seaworld
+```
+
+???
+
+* `web:/postgres:` are user defined names for services
+* `context:` matches argument to `docker run`
+* `ports:` matches `-p` argument to `docker run`
+* `volumes:` allows us to "bind mount" data into running container
+* `links:` tells compose to auto-start linked container and enable networking
+* `image:` tells compose to start a container from a tagged image vs. building local Dockerfile
+* `environment:` defines environment variables that are injected into the newly created container
+
+---
+
+# Live Demo: build and run - compose
+
+```sh
+# build all of the services defined in the config
+docker-compose build
+```
+
+```sh
+# start up and link together all of the services
+docker-compose up
+```
+
+```sh
+# alternatively start a sinble services
+docker-compose up db
+```
+
+???
+
+* point out the name of the build image for web `ruby_web`
+* looks at logs
+* mention `-d --detach` flag for `up`
+
+#### database is running, initialize and networked to web
+```
+docker-compose run --rm web ash
+ping db
+
+docker exec -it ruby_db_1 bash
+env | grep POSTGRES
+psql -U moby -W ocean
+\l
+```
+
+---
+
+# Real World Example: Camunda
+
+[Camunda](https://camunda.com) is an open source platform for workflow and decision automation.
+
+#### Docker Hub
+
+> Docker Hub is the world's easiest way to create, manage, and deliver your teams' container applications.
+
+[https://hub.docker.com](https://hub.docker.com)
+
+```sh
+docker run \
+  -d \
+  --name camunda \
+  -p 8080:8080 \
+  camunda/camunda-bpm-platform:latest
+
+# open http://localhost:8080/camunda-welcome/index.html
+```
+
+???
+
+docker ps
+docker stop camunda
+docker rm camunda
+
+---
+
+# Docker for Windows: 🤞
+
+That's all well and good but what about Windows?!
+
+![windows_firewall](./assets/docker_for_windows_firewall.png "Docker for Windows - Firewall")
+
+```sh
+C:\> choco install docker-for-windows
+C:\> docker run mcr.microsoft.com/mcr/hello-world
+```
+
+???
+
+```
+docker build -t hello-windows .
+docker run --rm hello-windows
+```
+
+```
+start a powershell as admin
+Start-Process powershell -verb runAs
+```
+
+---
+
+# Live Demo: build and run - compose
+
+```sh
+# build all of the services defined in the config
+docker-compose build
+```
+
+```sh
+# start up and link together all of the services
+docker-compose up
+```
+
+???
+
+---
+
+# nib
+
+```
+choco install ruby
+gem install nib
+gem install nib-integrate
+```
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+    <script>var slideshow = remark.create();</script>
+  </body>
+</html>
+
