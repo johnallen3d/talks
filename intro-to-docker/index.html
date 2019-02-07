@@ -294,18 +294,74 @@ C:\> docker run mcr.microsoft.com/mcr/hello-world
 ???
 
 ```
+cd .\examples\windows
 docker build -t hello-windows .
 docker run --rm hello-windows
 ```
 
 ```
-start a powershell as admin
+# NOTE: to start a powershell as admin
 Start-Process powershell -verb runAs
 ```
 
 ---
 
+# Windows Example: IIS
+
+Let's recreate the example from earlier (simple html file served up) with IIS.
+
+```Dockerfile
+# Dockerfile
+FROM microsoft/iis
+
+RUN powershell -NoProfile -Command Remove-Item -Recurse C:\inetpub\wwwroot\*
+
+WORKDIR /inetpub/wwwroot
+
+COPY . .
+```
+
+---
+
+# Windows Example: IIS (cont.)
+
+```yaml
+version: "2.3"
+
+services:
+  web:
+    build:
+      context: .
+    volumes:
+      - .:C:\app
+    ports:
+      - '8080:80'
+    links:
+      - db
+
+  # Linux container running along side a Windows container (LCOW, expiremental feature)
+  db:
+    image: postgres:alpine
+
+# the MS SQL Server image is requiring >2GB of ram which is not available in LCOW
+# db:
+#   image: mcr.microsoft.com/mssql/server:2017-latest
+#   environment:
+#     ACCEPT_EULA: Y
+#     SA_PASSWORD: password
+#   ports:
+#     - '1433:1433'
+```
+
+???
+
+[Linux Containers on Windows: LCOW](https://docs.microsoft.com/en-us/virtualization/windowscontainers/deploy-containers/linux-containers)
+
+---
+
 # Live Demo: build and run - compose
+
+Same steps to build and run our containers.
 
 ```sh
 # build all of the services defined in the config
@@ -316,7 +372,6 @@ docker-compose build
 # start up and link together all of the services
 docker-compose up
 ```
-
     </textarea>
     <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
     <script>var slideshow = remark.create();</script>
