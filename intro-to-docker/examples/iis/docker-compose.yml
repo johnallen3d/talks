@@ -12,9 +12,12 @@ services:
       - db
 
   db:
-    image: mcr.microsoft.com/mssql/server:2017-latest
-    environment:
-      ACCEPT_EULA: Y
-      SA_PASSWORD: password
-    ports:
-      '1433:1433' -d
+    image: postgres:alpine
+
+# db:
+#   image: mcr.microsoft.com/mssql/server:2017-latest
+#   environment:
+#     ACCEPT_EULA: Y
+#     SA_PASSWORD: password
+#   ports:
+#     - '1433:1433'
